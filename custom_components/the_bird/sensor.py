@@ -1,4 +1,4 @@
-"""Sensor platform for Globird Energy."""
+"""Sensor platform for The Bird."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,18 +18,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_IDENTIFIER, DOMAIN
-from .coordinator import GlobirdEnergyCoordinator
+from .coordinator import TheBirdCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
-class GlobirdSensorEntityDescription(SensorEntityDescription):
-    """Describes Globird Energy sensor entity."""
+class TheBirdSensorEntityDescription(SensorEntityDescription):
+    """Describes The Bird sensor entity."""
 
     value_key: str
 
 
-SENSORS: tuple[GlobirdSensorEntityDescription, ...] = (
-    GlobirdSensorEntityDescription(
+SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
+    TheBirdSensorEntityDescription(
         key="daily_usage",
         translation_key="daily_usage",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -38,7 +38,7 @@ SENSORS: tuple[GlobirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="usage_kwh",
     ),
-    GlobirdSensorEntityDescription(
+    TheBirdSensorEntityDescription(
         key="daily_usage_cost",
         translation_key="daily_usage_cost",
         native_unit_of_measurement="AUD",
@@ -47,7 +47,7 @@ SENSORS: tuple[GlobirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="usage_cost",
     ),
-    GlobirdSensorEntityDescription(
+    TheBirdSensorEntityDescription(
         key="daily_supply_charge",
         translation_key="daily_supply_charge",
         native_unit_of_measurement="AUD",
@@ -56,7 +56,7 @@ SENSORS: tuple[GlobirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="supply_charge",
     ),
-    GlobirdSensorEntityDescription(
+    TheBirdSensorEntityDescription(
         key="daily_total_cost",
         translation_key="daily_total_cost",
         native_unit_of_measurement="AUD",
@@ -73,26 +73,26 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Globird Energy sensors from a config entry."""
-    coordinator: GlobirdEnergyCoordinator = hass.data[DOMAIN][entry.entry_id]
+    """Set up The Bird sensors from a config entry."""
+    coordinator: TheBirdCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
-        GlobirdEnergySensor(coordinator, entry, description)
+        TheBirdSensor(coordinator, entry, description)
         for description in SENSORS
     )
 
 
-class GlobirdEnergySensor(CoordinatorEntity[GlobirdEnergyCoordinator], SensorEntity):
-    """Representation of a Globird Energy sensor."""
+class TheBirdSensor(CoordinatorEntity[TheBirdCoordinator], SensorEntity):
+    """Representation of a The Bird sensor."""
 
-    entity_description: GlobirdSensorEntityDescription
+    entity_description: TheBirdSensorEntityDescription
     _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: GlobirdEnergyCoordinator,
+        coordinator: TheBirdCoordinator,
         entry: ConfigEntry,
-        description: GlobirdSensorEntityDescription,
+        description: TheBirdSensorEntityDescription,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
@@ -104,11 +104,10 @@ class GlobirdEnergySensor(CoordinatorEntity[GlobirdEnergyCoordinator], SensorEnt
         
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=f"Globird Energy {identifier}",
-            manufacturer="Globird Energy",
+            name=f"The Bird {identifier}",
+            manufacturer="The Bird",
             model="Smart Meter",
             entry_type=DeviceEntryType.SERVICE,
-            configuration_url="https://myaccount.globirdenergy.com.au",
         )
 
     @property

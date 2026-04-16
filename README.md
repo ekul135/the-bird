@@ -1,9 +1,9 @@
-# Globird Energy for Home Assistant
+# The Bird for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/ekul135/globird-energy-hass.svg)](https://github.com/ekul135/globird-energy-hass/releases)
+[![GitHub Release](https://img.shields.io/github/release/ekul135/the-bird.svg)](https://github.com/ekul135/the-bird/releases)
 
-A Home Assistant custom integration for [Globird Energy](https://globirdenergy.com.au/) that fetches your daily electricity usage and cost data.
+A Home Assistant custom integration that fetches your daily electricity usage and cost data from your energy provider portal.
 
 ## Features
 
@@ -20,24 +20,24 @@ A Home Assistant custom integration for [Globird Energy](https://globirdenergy.c
 2. Click on "Integrations"
 3. Click the three dots menu in the top right corner
 4. Select "Custom repositories"
-5. Add this repository URL: `https://github.com/ekul135/globird-energy-hass`
+5. Add this repository URL: `https://github.com/ekul135/the-bird`
 6. Select "Integration" as the category
 7. Click "Add"
-8. Search for "Globird Energy" and install it
+8. Search for "The Bird" and install it
 9. Restart Home Assistant
 
 ### Manual Installation
 
 1. Download the latest release
-2. Copy the `custom_components/globird_energy` folder to your Home Assistant `config/custom_components/` directory
+2. Copy the `custom_components/the_bird` folder to your Home Assistant `config/custom_components/` directory
 3. Restart Home Assistant
 
 ## Configuration
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **Add Integration**
-3. Search for "Globird Energy"
-4. Enter your Globird Energy account email and password
+3. Search for "The Bird"
+4. Enter your account email and password
 5. Select your meter from the list (or enter manually if needed)
 
 ## Sensors
@@ -46,20 +46,20 @@ After setup, the following sensors will be available:
 
 | Sensor | Description | Unit |
 |--------|-------------|------|
-| `sensor.globird_energy_*_daily_usage` | Yesterday's total electricity usage | kWh |
-| `sensor.globird_energy_*_daily_usage_cost` | Yesterday's usage cost | AUD |
-| `sensor.globird_energy_*_daily_supply_charge` | Daily supply charge | AUD |
-| `sensor.globird_energy_*_daily_total_cost` | Total daily cost | AUD |
+| `sensor.the_bird_*_daily_usage` | Yesterday's total electricity usage | kWh |
+| `sensor.the_bird_*_daily_usage_cost` | Yesterday's usage cost | AUD |
+| `sensor.the_bird_*_daily_supply_charge` | Daily supply charge | AUD |
+| `sensor.the_bird_*_daily_total_cost` | Total daily cost | AUD |
 
 ## Example Dashboard Card
 
 ```yaml
 type: entities
-title: Globird Energy
+title: The Bird Energy
 entities:
-  - entity: sensor.globird_energy_qb121208805_daily_usage
+  - entity: sensor.the_bird_qb121208805_daily_usage
     name: Daily Usage
-  - entity: sensor.globird_energy_qb121208805_daily_total_cost
+  - entity: sensor.the_bird_qb121208805_daily_total_cost
     name: Daily Cost
 ```
 
@@ -71,7 +71,7 @@ You can add the daily usage sensor to the Home Assistant Energy Dashboard for tr
 
 ### Authentication Failed
 - Ensure your email and password are correct
-- Try logging into the [Globird Energy portal](https://myaccount.globirdenergy.com.au/) to verify your credentials
+- Try logging into your energy provider portal to verify your credentials
 
 ### No Data
 - Data is typically available after 6 AM for the previous day
@@ -80,7 +80,7 @@ You can add the daily usage sensor to the Home Assistant Energy Dashboard for tr
 ## Privacy & Security
 
 - Your credentials are stored locally in Home Assistant
-- Password is encrypted using RSA-OAEP before being sent to the Globird API
+- Password is encrypted using RSA-OAEP before being sent to the API
 - No data is sent to any third parties
 
 ## License
@@ -89,4 +89,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Disclaimer
 
-This is an unofficial integration and is not affiliated with Globird Energy. Use at your own risk.
+This is an unofficial integration and is not affiliated with any energy company. Use at your own risk.

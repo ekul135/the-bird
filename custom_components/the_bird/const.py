@@ -1,7 +1,7 @@
-"""Constants for the Globird Energy integration."""
+"""Constants for The Bird integration."""
 from datetime import timedelta
 
-DOMAIN = "globird_energy"
+DOMAIN = "the_bird"
 
 # Configuration keys
 CONF_ACCOUNT_SERVICE_ID = "account_service_id"

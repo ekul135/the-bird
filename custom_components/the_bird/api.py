@@ -1,4 +1,4 @@
-"""Globird Energy API Client."""
+"""The Bird API Client."""
 from __future__ import annotations
 
 import base64
@@ -50,16 +50,16 @@ def encrypt_password(password: str, public_key) -> str:
     return base64.b64encode(encrypted).decode("utf-8")
 
 
-class GlobirdergyAuthError(Exception):
+class TheBirdAuthError(Exception):
     """Authentication error."""
 
 
-class GlobirdergyApiError(Exception):
+class TheBirdApiError(Exception):
     """API error."""
 
 
-class GlobirdergyClient:
-    """Async client for Globird Energy API."""
+class TheBirdClient:
+    """Async client for The Bird API."""
 
     def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
         """Initialize the client."""
@@ -115,7 +115,7 @@ class GlobirdergyClient:
             True if login successful
 
         Raises:
-            GlobirdergyAuthError: If login fails
+            TheBirdAuthError: If login fails
         """
         if self._public_key is None:
             await self._get_public_key()
@@ -138,7 +138,7 @@ class GlobirdergyClient:
                 return True
             else:
                 _LOGGER.error("Login failed: %s - %s", response.status, response_text)
-                raise GlobirdergyAuthError(f"Login failed: {response.status}")
+                raise TheBirdAuthError(f"Login failed: {response.status}")
 
     async def get_current_user(self) -> dict[str, Any]:
         """Get current user info including accounts after login."""
@@ -154,13 +154,13 @@ class GlobirdergyClient:
                 text = await response.text()
                 _LOGGER.error("CurrentUser returned non-JSON (%s): %s", 
                              response.content_type, text[:500])
-                raise GlobirdergyAuthError("Session not authenticated - received HTML instead of JSON")
+                raise TheBirdAuthError("Session not authenticated - received HTML instead of JSON")
             
             response.raise_for_status()
             data = await response.json()
             
             if not data.get("success"):
-                raise GlobirdergyApiError(f"API error: {data.get('message')}")
+                raise TheBirdApiError(f"API error: {data.get('message')}")
                 
             return data.get("data", {})
 
@@ -225,7 +225,7 @@ class GlobirdergyClient:
             if response.status != 200:
                 text = await response.text()
                 _LOGGER.error("Failed to get cost detail: %s - %s", response.status, text)
-                raise GlobirdergyApiError(f"API error: {response.status}")
+                raise TheBirdApiError(f"API error: {response.status}")
             return await response.json()
 
     async def get_daily_data(

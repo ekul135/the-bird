@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Globird Energy Login",
-        "description": "Enter your Globird Energy account credentials.",
+        "title": "The Bird - Login",
+        "description": "Enter your account credentials.",
         "data": {
           "email": "Email",
           "password": "Password"
@@ -19,7 +19,7 @@
     },
     "error": {
       "invalid_auth": "Invalid email or password",
-      "cannot_connect": "Unable to connect to Globird Energy",
+      "cannot_connect": "Unable to connect",
       "no_accounts": "No meters found on this account",
       "unknown": "An unexpected error occurred"
     },

@@ -1,4 +1,4 @@
-"""Data coordinator for Globird Energy."""
+"""Data coordinator for The Bird."""
 from __future__ import annotations
 
 import logging
@@ -11,7 +11,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import GlobirdergyApiError, GlobirdergyAuthError, GlobirdergyClient
+from .api import TheBirdApiError, TheBirdAuthError, TheBirdClient
 from .const import (
     CONF_ACCOUNT_SERVICE_ID,
     CONF_IDENTIFIER,
@@ -22,8 +22,8 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class GlobirdEnergyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Coordinator to manage data fetching from Globird Energy API."""
+class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+    """Coordinator to manage data fetching from The Bird API."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
@@ -37,7 +37,7 @@ class GlobirdEnergyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API."""
-        client = GlobirdergyClient()
+        client = TheBirdClient()
         try:
             # Login
             await client.login(
@@ -54,9 +54,9 @@ class GlobirdEnergyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             return data
 
-        except GlobirdergyAuthError as err:
+        except TheBirdAuthError as err:
             raise UpdateFailed(f"Authentication failed: {err}") from err
-        except GlobirdergyApiError as err:
+        except TheBirdApiError as err:
             raise UpdateFailed(f"API error: {err}") from err
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Connection error: {err}") from err

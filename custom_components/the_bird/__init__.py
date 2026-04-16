@@ -1,4 +1,4 @@
-"""The Globird Energy integration."""
+"""The Bird integration."""
 from __future__ import annotations
 
 import logging
@@ -8,7 +8,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
-from .coordinator import GlobirdEnergyCoordinator
+from .coordinator import TheBirdCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Globird Energy from a config entry."""
-    coordinator = GlobirdEnergyCoordinator(hass, entry)
+    """Set up The Bird from a config entry."""
+    coordinator = TheBirdCoordinator(hass, entry)
     
     await coordinator.async_config_entry_first_refresh()
 

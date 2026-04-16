@@ -1,4 +1,4 @@
-"""Config flow for Globird Energy integration."""
+"""Config flow for The Bird integration."""
 from __future__ import annotations
 
 import logging
@@ -10,14 +10,14 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 
-from .api import GlobirdergyAuthError, GlobirdergyApiError, GlobirdergyClient
+from .api import TheBirdAuthError, TheBirdApiError, TheBirdClient
 from .const import CONF_ACCOUNT_SERVICE_ID, CONF_IDENTIFIER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Globird Energy."""
+class TheBirdConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for The Bird."""
 
     VERSION = 1
 
@@ -38,7 +38,7 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._password = user_input[CONF_PASSWORD]
 
             try:
-                client = GlobirdergyClient()
+                client = TheBirdClient()
                 _LOGGER.debug("Attempting login for %s", self._email)
                 await client.login(self._email, self._password)
                 _LOGGER.debug("Login successful, fetching accounts")
@@ -53,10 +53,10 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     errors["base"] = "no_accounts"
 
-            except GlobirdergyAuthError as err:
+            except TheBirdAuthError as err:
                 _LOGGER.error("Authentication error: %s", err)
                 errors["base"] = "invalid_auth"
-            except GlobirdergyApiError as err:
+            except TheBirdApiError as err:
                 _LOGGER.error("API error: %s", err)
                 errors["base"] = "cannot_connect"
             except aiohttp.ClientError as err:
@@ -95,7 +95,7 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title=f"Globird Energy ({identifier})",
+                title=f"The Bird ({identifier})",
                 data={
                     CONF_EMAIL: self._email,
                     CONF_PASSWORD: self._password,
