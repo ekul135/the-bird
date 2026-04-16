@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/the_bird/brand/logo.png" alt="The Bird" width="200">
+</p>
+
 # The Bird for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
