@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Globird Energy Login",
+        "description": "Enter your Globird Energy account credentials.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "account": {
+        "title": "Select Account",
+        "description": "Select the meter you want to monitor.",
+        "data": {
+          "account": "Meter"
+        }
+      },
+      "manual": {
+        "title": "Manual Entry",
+        "description": "Enter your Account Service ID and meter identifier (NMI) manually.",
+        "data": {
+          "account_service_id": "Account Service ID",
+          "identifier": "Meter Identifier (NMI)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password",
+      "cannot_connect": "Unable to connect to Globird Energy",
+      "no_accounts": "No accounts found",
+      "unknown": "An unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This meter is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "daily_usage": {
+        "name": "Daily Usage"
+      },
+      "daily_usage_cost": {
+        "name": "Daily Usage Cost"
+      },
+      "daily_supply_charge": {
+        "name": "Daily Supply Charge"
+      },
+      "daily_total_cost": {
+        "name": "Daily Total Cost"
+      }
+    }
+  }
+}
