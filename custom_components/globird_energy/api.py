@@ -61,9 +61,10 @@ class GlobirdergyApiError(Exception):
 class GlobirdergyClient:
     """Async client for Globird Energy API."""
 
-    def __init__(self, session: aiohttp.ClientSession) -> None:
+    def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
         """Initialize the client."""
-        self._session = session
+        self._external_session = session
+        self._session: aiohttp.ClientSession | None = None
         self._public_key = None
         self._headers = {
             "accept": "*/*",
@@ -73,10 +74,25 @@ class GlobirdergyClient:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         }
 
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create an aiohttp session with cookie jar."""
+        if self._session is None:
+            # Create our own session with cookie jar for login persistence
+            jar = aiohttp.CookieJar()
+            self._session = aiohttp.ClientSession(cookie_jar=jar)
+        return self._session
+
+    async def close(self) -> None:
+        """Close the session."""
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
+
     async def _get_public_key(self):
         """Fetch the RSA public key from the API (JWK format)."""
+        session = await self._get_session()
         url = f"{BASE_URL}/api/account/publicjwk"
-        async with self._session.get(url, headers=self._headers) as response:
+        async with session.get(url, headers=self._headers) as response:
             response.raise_for_status()
             jwk = await response.json()
             self._public_key = jwk_to_public_key(jwk)
@@ -101,11 +117,12 @@ class GlobirdergyClient:
 
         encrypted_password = encrypt_password(password, self._public_key)
 
+        session = await self._get_session()
         url = f"{BASE_URL}/api/account/login"
         headers = {**self._headers, "referer": f"{BASE_URL}/login"}
         payload = {"emailAddress": email, "password": encrypted_password}
 
-        async with self._session.post(url, json=payload, headers=headers) as response:
+        async with session.post(url, json=payload, headers=headers) as response:
             if response.status == 200:
                 _LOGGER.debug("Login successful")
                 return True
@@ -116,10 +133,11 @@ class GlobirdergyClient:
 
     async def get_accounts(self) -> list[dict[str, Any]]:
         """Get list of accounts to find accountServiceId and identifier."""
+        session = await self._get_session()
         url = f"{BASE_URL}/api/account/accounts"
         headers = {**self._headers, "referer": f"{BASE_URL}/dashboard"}
 
-        async with self._session.get(url, headers=headers) as response:
+        async with session.get(url, headers=headers) as response:
             response.raise_for_status()
             return await response.json()
 
@@ -143,6 +161,7 @@ class GlobirdergyClient:
         Returns:
             JSON response from API
         """
+        session = await self._get_session()
         url = f"{BASE_URL}/api/transaction/CostDetail"
         headers = {**self._headers, "referer": f"{BASE_URL}/usagechart"}
         payload = {
@@ -153,7 +172,7 @@ class GlobirdergyClient:
             "isSmart": is_smart,
         }
 
-        async with self._session.post(url, json=payload, headers=headers) as response:
+        async with session.post(url, json=payload, headers=headers) as response:
             if response.status != 200:
                 text = await response.text()
                 _LOGGER.error("Failed to get cost detail: %s - %s", response.status, text)

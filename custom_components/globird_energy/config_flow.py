@@ -9,7 +9,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import GlobirdergyAuthError, GlobirdergyClient
 from .const import CONF_ACCOUNT_SERVICE_ID, CONF_IDENTIFIER, DOMAIN
@@ -39,12 +38,12 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._password = user_input[CONF_PASSWORD]
 
             try:
-                session = async_get_clientsession(self.hass)
-                client = GlobirdergyClient(session)
+                client = GlobirdergyClient()
                 await client.login(self._email, self._password)
                 
                 # Fetch accounts to get service IDs
                 self._accounts = await client.get_accounts()
+                await client.close()
                 
                 if self._accounts:
                     return await self.async_step_account()
@@ -53,7 +52,8 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             except GlobirdergyAuthError:
                 errors["base"] = "invalid_auth"
-            except aiohttp.ClientError:
+            except aiohttp.ClientError as err:
+                _LOGGER.error("Connection error: %s", err)
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")

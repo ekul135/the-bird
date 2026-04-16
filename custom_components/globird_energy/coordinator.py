@@ -9,7 +9,6 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import GlobirdergyApiError, GlobirdergyAuthError, GlobirdergyClient
@@ -35,22 +34,19 @@ class GlobirdEnergyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=DEFAULT_SCAN_INTERVAL,
         )
         self.entry = entry
-        self._client: GlobirdergyClient | None = None
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API."""
+        client = GlobirdergyClient()
         try:
-            session = async_get_clientsession(self.hass)
-            self._client = GlobirdergyClient(session)
-
             # Login
-            await self._client.login(
+            await client.login(
                 self.entry.data[CONF_EMAIL],
                 self.entry.data[CONF_PASSWORD],
             )
 
             # Fetch daily data
-            data = await self._client.get_daily_data(
+            data = await client.get_daily_data(
                 account_service_id=self.entry.data[CONF_ACCOUNT_SERVICE_ID],
                 identifier=self.entry.data[CONF_IDENTIFIER],
                 days_back=1,
@@ -67,3 +63,5 @@ class GlobirdEnergyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception as err:
             _LOGGER.exception("Unexpected error fetching data")
             raise UpdateFailed(f"Unexpected error: {err}") from err
+        finally:
+            await client.close()
