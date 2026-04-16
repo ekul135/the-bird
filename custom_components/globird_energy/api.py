@@ -79,7 +79,11 @@ class GlobirdergyClient:
         if self._session is None:
             # Create our own session with cookie jar for login persistence
             jar = aiohttp.CookieJar()
-            self._session = aiohttp.ClientSession(cookie_jar=jar)
+            timeout = aiohttp.ClientTimeout(total=30)
+            self._session = aiohttp.ClientSession(
+                cookie_jar=jar,
+                timeout=timeout,
+            )
         return self._session
 
     async def close(self) -> None:

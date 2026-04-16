@@ -39,10 +39,13 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 client = GlobirdergyClient()
+                _LOGGER.debug("Attempting login for %s", self._email)
                 await client.login(self._email, self._password)
+                _LOGGER.debug("Login successful, fetching accounts")
                 
                 # Fetch accounts to get service IDs
                 self._accounts = await client.get_accounts()
+                _LOGGER.debug("Got %d accounts", len(self._accounts) if self._accounts else 0)
                 await client.close()
                 
                 if self._accounts:
@@ -50,13 +53,14 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     errors["base"] = "no_accounts"
 
-            except GlobirdergyAuthError:
+            except GlobirdergyAuthError as err:
+                _LOGGER.error("Authentication error: %s", err)
                 errors["base"] = "invalid_auth"
             except aiohttp.ClientError as err:
-                _LOGGER.error("Connection error: %s", err)
+                _LOGGER.error("Connection error (%s): %s", type(err).__name__, err)
                 errors["base"] = "cannot_connect"
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
+            except Exception as err:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception (%s): %s", type(err).__name__, err)
                 errors["base"] = "unknown"
 
         return self.async_show_form(
