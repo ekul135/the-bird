@@ -239,41 +239,61 @@ class TheBirdClient:
             days_back: Number of days to look back (default 1 for yesterday)
 
         Returns:
-            Processed daily data with usage, cost, supply charge, and total
+            Processed daily data with usage, costs, solar export, and credits
         """
         to_date = datetime.now().strftime("%Y-%m-%d")
         from_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-        data = await self.get_cost_detail(
+        response = await self.get_cost_detail(
             account_service_id=account_service_id,
             identifier=identifier,
             from_date=from_date,
             to_date=to_date,
         )
 
-        # Process the response to extract daily totals
+        # Process the response - API returns {data: [...], success: true}
         result = {
             "date": from_date,
-            "usage_kwh": 0.0,
-            "usage_cost": 0.0,
+            # Grid usage
+            "grid_usage_kwh": 0.0,
+            "grid_usage_cost": 0.0,
+            # Solar export
+            "solar_export_kwh": 0.0,
+            "solar_export_credit": 0.0,
+            # Super Export top up (additional solar incentive)
+            "super_export_kwh": 0.0,
+            "super_export_credit": 0.0,
+            # Supply charge
             "supply_charge": 0.0,
-            "total_cost": 0.0,
-            "raw_data": data,
+            # Credits
+            "zerohero_credit": 0.0,
+            # Totals
+            "total_cost": 0.0,  # Net cost (positive = you pay, negative = credit)
+            "raw_data": response,
         }
 
-        if data and isinstance(data, list) and len(data) > 0:
-            day_data = data[0] if isinstance(data, list) else data
-            
-            # Sum up interval usage if available
-            if "intervals" in day_data:
-                for interval in day_data["intervals"]:
-                    result["usage_kwh"] += interval.get("usage", 0)
-                    result["usage_cost"] += interval.get("cost", 0)
-            
-            # Get daily totals if available
-            result["usage_kwh"] = day_data.get("totalUsage", result["usage_kwh"])
-            result["usage_cost"] = day_data.get("totalCost", result["usage_cost"])
-            result["supply_charge"] = day_data.get("supplyCharge", 0)
-            result["total_cost"] = result["usage_cost"] + result["supply_charge"]
+        data = response.get("data", []) if isinstance(response, dict) else response
+
+        if data and isinstance(data, list):
+            for item in data:
+                category = item.get("chargeCategory", "").upper()
+                amount = item.get("amount", 0.0) or 0.0
+                quantity = item.get("quantity", 0.0) or 0.0
+
+                if category == "USAGE":
+                    result["grid_usage_kwh"] = quantity
+                    result["grid_usage_cost"] = amount
+                elif category == "SOLAR":
+                    result["solar_export_kwh"] = quantity
+                    result["solar_export_credit"] = abs(amount)  # Store as positive
+                elif "SUPER EXPORT" in category or "EXPORT TOP" in category.upper():
+                    result["super_export_kwh"] = quantity
+                    result["super_export_credit"] = abs(amount)
+                elif "ZEROHERO" in category:
+                    result["zerohero_credit"] = abs(amount)
+                elif category == "SUPPLY":
+                    result["supply_charge"] = amount
+
+                result["total_cost"] += amount
 
         return result

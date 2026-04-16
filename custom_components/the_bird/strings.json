@@ -29,17 +29,32 @@
   },
   "entity": {
     "sensor": {
-      "daily_usage": {
-        "name": "Daily Usage"
+      "usage": {
+        "name": "Usage"
       },
-      "daily_usage_cost": {
-        "name": "Daily Usage Cost"
+      "usage_cost": {
+        "name": "Usage Cost"
       },
-      "daily_supply_charge": {
-        "name": "Daily Supply Charge"
+      "solar": {
+        "name": "Solar"
       },
-      "daily_total_cost": {
-        "name": "Daily Total Cost"
+      "solar_credit": {
+        "name": "Solar Credit"
+      },
+      "super_export": {
+        "name": "Super Export"
+      },
+      "super_export_credit": {
+        "name": "Super Export Credit"
+      },
+      "supply": {
+        "name": "Supply"
+      },
+      "zerohero": {
+        "name": "ZeroHero"
+      },
+      "net_cost": {
+        "name": "Net Cost"
       }
     }
   }

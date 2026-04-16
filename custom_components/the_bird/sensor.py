@@ -29,36 +29,87 @@ class TheBirdSensorEntityDescription(SensorEntityDescription):
 
 
 SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
+    # Usage
     TheBirdSensorEntityDescription(
-        key="daily_usage",
-        translation_key="daily_usage",
+        key="usage",
+        translation_key="usage",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
-        value_key="usage_kwh",
+        value_key="grid_usage_kwh",
     ),
     TheBirdSensorEntityDescription(
-        key="daily_usage_cost",
-        translation_key="daily_usage_cost",
+        key="usage_cost",
+        translation_key="usage_cost",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
-        value_key="usage_cost",
+        value_key="grid_usage_cost",
+    ),
+    # Solar
+    TheBirdSensorEntityDescription(
+        key="solar",
+        translation_key="solar",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_key="solar_export_kwh",
     ),
     TheBirdSensorEntityDescription(
-        key="daily_supply_charge",
-        translation_key="daily_supply_charge",
+        key="solar_credit",
+        translation_key="solar_credit",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_key="solar_export_credit",
+    ),
+    # Super Export
+    TheBirdSensorEntityDescription(
+        key="super_export",
+        translation_key="super_export",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_key="super_export_kwh",
+    ),
+    TheBirdSensorEntityDescription(
+        key="super_export_credit",
+        translation_key="super_export_credit",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_key="super_export_credit",
+    ),
+    # Supply
+    TheBirdSensorEntityDescription(
+        key="supply",
+        translation_key="supply",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="supply_charge",
     ),
+    # ZeroHero
     TheBirdSensorEntityDescription(
-        key="daily_total_cost",
-        translation_key="daily_total_cost",
+        key="zerohero",
+        translation_key="zerohero",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_key="zerohero_credit",
+    ),
+    # Net Cost (positive = pay, negative = credit)
+    TheBirdSensorEntityDescription(
+        key="net_cost",
+        translation_key="net_cost",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,

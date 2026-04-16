@@ -46,10 +46,15 @@ After setup, the following sensors will be available:
 
 | Sensor | Description | Unit |
 |--------|-------------|------|
-| `sensor.the_bird_*_daily_usage` | Yesterday's total electricity usage | kWh |
-| `sensor.the_bird_*_daily_usage_cost` | Yesterday's usage cost | AUD |
-| `sensor.the_bird_*_daily_supply_charge` | Daily supply charge | AUD |
-| `sensor.the_bird_*_daily_total_cost` | Total daily cost | AUD |
+| `sensor.the_bird_*_usage` | Grid electricity imported | kWh |
+| `sensor.the_bird_*_usage_cost` | Cost of grid usage | AUD |
+| `sensor.the_bird_*_solar` | Solar energy exported | kWh |
+| `sensor.the_bird_*_solar_credit` | Credit from solar export | AUD |
+| `sensor.the_bird_*_super_export` | Super Export energy | kWh |
+| `sensor.the_bird_*_super_export_credit` | Super Export credit | AUD |
+| `sensor.the_bird_*_supply` | Daily supply charge | AUD |
+| `sensor.the_bird_*_zerohero` | ZeroHero credit | AUD |
+| `sensor.the_bird_*_net_cost` | Net daily cost (negative = credit) | AUD |
 
 ## Example Dashboard Card
 
@@ -57,15 +62,17 @@ After setup, the following sensors will be available:
 type: entities
 title: The Bird Energy
 entities:
-  - entity: sensor.the_bird_qb121208805_daily_usage
-    name: Daily Usage
-  - entity: sensor.the_bird_qb121208805_daily_total_cost
-    name: Daily Cost
+  - entity: sensor.the_bird_qb121208805_usage
+    name: Usage
+  - entity: sensor.the_bird_qb121208805_solar
+    name: Solar
+  - entity: sensor.the_bird_qb121208805_net_cost
+    name: Net Cost
 ```
 
 ## Energy Dashboard
 
-You can add the daily usage sensor to the Home Assistant Energy Dashboard for tracking your electricity consumption over time.
+You can add the grid usage and solar export sensors to the Home Assistant Energy Dashboard for tracking your electricity consumption and solar production over time.
 
 ## Troubleshooting
 
