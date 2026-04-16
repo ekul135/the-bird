@@ -19,6 +19,9 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Test files
+test*
+
 # Local development files (contain credentials)
 find_key.py
 globird_api.py

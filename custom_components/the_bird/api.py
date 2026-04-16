@@ -58,6 +58,9 @@ class TheBirdApiError(Exception):
     """API error."""
 
 
+class TheBirdNoDataError(Exception):
+    """No data available for the requested date."""
+
 class TheBirdClient:
     """Async client for The Bird API."""
 
@@ -239,10 +242,13 @@ class TheBirdClient:
             days_back: Number of days to look back (default 1 for yesterday)
 
         Returns:
-            Processed daily data with usage, costs, solar export, and credits
+            Processed daily data with usage, costs, solar export, and credits.
+            Returns None values if no data available for the requested date.
         """
         to_date = datetime.now().strftime("%Y-%m-%d")
         from_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        # API uses YYYY/MM/DD format in response
+        target_date_api_format = from_date.replace("-", "/")
 
         response = await self.get_cost_detail(
             account_service_id=account_service_id,
@@ -255,45 +261,69 @@ class TheBirdClient:
         result = {
             "date": from_date,
             # Grid usage
-            "grid_usage_kwh": 0.0,
-            "grid_usage_cost": 0.0,
+            "grid_usage_kwh": None,
+            "grid_usage_cost": None,
             # Solar export
-            "solar_export_kwh": 0.0,
-            "solar_export_credit": 0.0,
+            "solar_export_kwh": None,
+            "solar_export_credit": None,
             # Super Export top up (additional solar incentive)
-            "super_export_kwh": 0.0,
-            "super_export_credit": 0.0,
+            "super_export_kwh": None,
+            "super_export_credit": None,
             # Supply charge
-            "supply_charge": 0.0,
+            "supply_charge": None,
             # Credits
-            "zerohero_credit": 0.0,
+            "zerohero_credit": None,
             # Totals
-            "total_cost": 0.0,  # Net cost (positive = you pay, negative = credit)
+            "total_cost": None,
             "raw_data": response,
         }
 
         data = response.get("data", []) if isinstance(response, dict) else response
 
-        if data and isinstance(data, list):
-            for item in data:
-                category = item.get("chargeCategory", "").upper()
-                amount = item.get("amount", 0.0) or 0.0
-                quantity = item.get("quantity", 0.0) or 0.0
+        if not data or not isinstance(data, list) or len(data) == 0:
+            # No data available - raise exception so coordinator keeps previous values
+            raise TheBirdNoDataError(f"No data available for date {from_date}")
 
-                if category == "USAGE":
-                    result["grid_usage_kwh"] = quantity
-                    result["grid_usage_cost"] = amount
-                elif category == "SOLAR":
-                    result["solar_export_kwh"] = quantity
-                    result["solar_export_credit"] = abs(amount)  # Store as positive
-                elif "SUPER EXPORT" in category or "EXPORT TOP" in category.upper():
-                    result["super_export_kwh"] = quantity
-                    result["super_export_credit"] = abs(amount)
-                elif "ZEROHERO" in category:
-                    result["zerohero_credit"] = abs(amount)
-                elif category == "SUPPLY":
-                    result["supply_charge"] = amount
+        # Filter to only the target date (API may return multiple days)
+        target_items = [
+            item for item in data 
+            if item.get("date") == target_date_api_format
+        ]
 
-                result["total_cost"] += amount
+        if not target_items:
+            # No data for the specific date we want
+            raise TheBirdNoDataError(f"No data for target date {from_date}")
+
+        # Initialize totals now that we have data
+        result["grid_usage_kwh"] = 0.0
+        result["grid_usage_cost"] = 0.0
+        result["solar_export_kwh"] = 0.0
+        result["solar_export_credit"] = 0.0
+        result["super_export_kwh"] = 0.0
+        result["super_export_credit"] = 0.0
+        result["supply_charge"] = 0.0
+        result["zerohero_credit"] = 0.0
+        result["total_cost"] = 0.0
+
+        for item in target_items:
+            category = item.get("chargeCategory", "").upper()
+            amount = item.get("amount", 0.0) or 0.0
+            quantity = item.get("quantity", 0.0) or 0.0
+
+            if category == "USAGE":
+                result["grid_usage_kwh"] = quantity
+                result["grid_usage_cost"] = amount
+            elif category == "SOLAR":
+                result["solar_export_kwh"] = quantity
+                result["solar_export_credit"] = abs(amount)  # Store as positive
+            elif "SUPER EXPORT" in category or "EXPORT TOP" in category.upper():
+                result["super_export_kwh"] = quantity
+                result["super_export_credit"] = abs(amount)
+            elif "ZEROHERO" in category:
+                result["zerohero_credit"] = abs(amount)
+            elif category == "SUPPLY":
+                result["supply_charge"] = amount
+
+            result["total_cost"] += amount
 
         return result

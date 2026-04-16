@@ -11,7 +11,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import TheBirdApiError, TheBirdAuthError, TheBirdClient
+from .api import TheBirdApiError, TheBirdAuthError, TheBirdClient, TheBirdNoDataError
 from .const import (
     CONF_ACCOUNT_SERVICE_ID,
     CONF_IDENTIFIER,
@@ -54,6 +54,12 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             return data
 
+        except TheBirdNoDataError as err:
+            # No data available yet - keep previous values
+            _LOGGER.debug("No data available: %s", err)
+            if self.data is not None:
+                return self.data  # Keep previous values
+            raise UpdateFailed(f"No data available: {err}") from err
         except TheBirdAuthError as err:
             raise UpdateFailed(f"Authentication failed: {err}") from err
         except TheBirdApiError as err:
