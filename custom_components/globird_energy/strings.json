@@ -10,25 +10,17 @@
         }
       },
       "account": {
-        "title": "Select Account",
+        "title": "Select Meter",
         "description": "Select the meter you want to monitor.",
         "data": {
           "account": "Meter"
-        }
-      },
-      "manual": {
-        "title": "Manual Entry",
-        "description": "Enter your Account Service ID and meter identifier (NMI) manually.",
-        "data": {
-          "account_service_id": "Account Service ID",
-          "identifier": "Meter Identifier (NMI)"
         }
       }
     },
     "error": {
       "invalid_auth": "Invalid email or password",
       "cannot_connect": "Unable to connect to Globird Energy",
-      "no_accounts": "No accounts found",
+      "no_accounts": "No meters found on this account",
       "unknown": "An unexpected error occurred"
     },
     "abort": {

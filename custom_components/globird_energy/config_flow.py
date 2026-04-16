@@ -10,7 +10,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 
-from .api import GlobirdergyAuthError, GlobirdergyClient
+from .api import GlobirdergyAuthError, GlobirdergyApiError, GlobirdergyClient
 from .const import CONF_ACCOUNT_SERVICE_ID, CONF_IDENTIFIER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._email: str | None = None
         self._password: str | None = None
-        self._accounts: list[dict] = []
+        self._services: list[dict] = []
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -43,12 +43,12 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.login(self._email, self._password)
                 _LOGGER.debug("Login successful, fetching accounts")
                 
-                # Fetch accounts to get service IDs
-                self._accounts = await client.get_accounts()
-                _LOGGER.debug("Got %d accounts", len(self._accounts) if self._accounts else 0)
+                # Fetch accounts using currentuser endpoint
+                self._services = await client.get_accounts()
+                _LOGGER.debug("Got %d services", len(self._services))
                 await client.close()
                 
-                if self._accounts:
+                if self._services:
                     return await self.async_step_account()
                 else:
                     errors["base"] = "no_accounts"
@@ -56,6 +56,9 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except GlobirdergyAuthError as err:
                 _LOGGER.error("Authentication error: %s", err)
                 errors["base"] = "invalid_auth"
+            except GlobirdergyApiError as err:
+                _LOGGER.error("API error: %s", err)
+                errors["base"] = "cannot_connect"
             except aiohttp.ClientError as err:
                 _LOGGER.error("Connection error (%s): %s", type(err).__name__, err)
                 errors["base"] = "cannot_connect"
@@ -101,22 +104,15 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 },
             )
 
-        # Build account options
+        # Build account options from services
         account_options = {}
-        for account in self._accounts:
-            services = account.get("services", [])
-            for service in services:
-                service_id = service.get("accountServiceId")
-                identifier = service.get("identifier", service.get("nmi", "Unknown"))
-                address = account.get("address", {})
-                address_str = address.get("fullAddress", "Unknown Address")
-                
-                key = f"{service_id}|{identifier}"
-                account_options[key] = f"{identifier} - {address_str}"
-
-        if not account_options:
-            # Fallback to manual entry if account parsing fails
-            return await self.async_step_manual()
+        for service in self._services:
+            service_id = service.get("accountServiceId")
+            identifier = service.get("identifier", "Unknown")
+            address = service.get("address", "Unknown Address")
+            
+            key = f"{service_id}|{identifier}"
+            account_options[key] = f"{identifier} - {address}"
 
         return self.async_show_form(
             step_id="account",
@@ -126,41 +122,4 @@ class GlobirdEnergyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
-        )
-
-    async def async_step_manual(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle manual account entry."""
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            account_service_id = user_input[CONF_ACCOUNT_SERVICE_ID]
-            identifier = user_input[CONF_IDENTIFIER]
-
-            await self.async_set_unique_id(f"{self._email}_{identifier}")
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=f"Globird Energy ({identifier})",
-                data={
-                    CONF_EMAIL: self._email,
-                    CONF_PASSWORD: self._password,
-                    CONF_ACCOUNT_SERVICE_ID: account_service_id,
-                    CONF_IDENTIFIER: identifier,
-                },
-            )
-
-        return self.async_show_form(
-            step_id="manual",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_ACCOUNT_SERVICE_ID): int,
-                    vol.Required(CONF_IDENTIFIER): str,
-                }
-            ),
-            errors=errors,
-            description_placeholders={
-                "hint": "Enter your Account Service ID and NMI/Identifier manually."
-            },
         )

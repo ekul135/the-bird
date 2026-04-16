@@ -78,7 +78,8 @@ class GlobirdergyClient:
         """Get or create an aiohttp session with cookie jar."""
         if self._session is None:
             # Create our own session with cookie jar for login persistence
-            jar = aiohttp.CookieJar()
+            # unsafe=True allows cookies from IP addresses and non-standard domains
+            jar = aiohttp.CookieJar(unsafe=True)
             timeout = aiohttp.ClientTimeout(total=30)
             self._session = aiohttp.ClientSession(
                 cookie_jar=jar,
@@ -127,23 +128,67 @@ class GlobirdergyClient:
         payload = {"emailAddress": email, "password": encrypted_password}
 
         async with session.post(url, json=payload, headers=headers) as response:
+            # Must read response body for cookies to be properly captured
+            response_text = await response.text()
+            _LOGGER.debug("Login response status: %s", response.status)
+            _LOGGER.debug("Login response cookies: %s", session.cookie_jar.filter_cookies(BASE_URL))
+            
             if response.status == 200:
-                _LOGGER.debug("Login successful")
+                _LOGGER.debug("Login successful, response: %s", response_text[:200] if response_text else "empty")
                 return True
             else:
-                text = await response.text()
-                _LOGGER.error("Login failed: %s - %s", response.status, text)
+                _LOGGER.error("Login failed: %s - %s", response.status, response_text)
                 raise GlobirdergyAuthError(f"Login failed: {response.status}")
 
-    async def get_accounts(self) -> list[dict[str, Any]]:
-        """Get list of accounts to find accountServiceId and identifier."""
+    async def get_current_user(self) -> dict[str, Any]:
+        """Get current user info including accounts after login."""
         session = await self._get_session()
-        url = f"{BASE_URL}/api/account/accounts"
+        url = f"{BASE_URL}/api/account/currentuser"
         headers = {**self._headers, "referer": f"{BASE_URL}/dashboard"}
 
         async with session.get(url, headers=headers) as response:
+            _LOGGER.debug("CurrentUser response status: %s, content-type: %s", 
+                         response.status, response.content_type)
+            
+            if response.content_type != "application/json":
+                text = await response.text()
+                _LOGGER.error("CurrentUser returned non-JSON (%s): %s", 
+                             response.content_type, text[:500])
+                raise GlobirdergyAuthError("Session not authenticated - received HTML instead of JSON")
+            
             response.raise_for_status()
-            return await response.json()
+            data = await response.json()
+            
+            if not data.get("success"):
+                raise GlobirdergyApiError(f"API error: {data.get('message')}")
+                
+            return data.get("data", {})
+
+    async def get_accounts(self) -> list[dict[str, Any]]:
+        """Get list of accounts to find accountServiceId and identifier.
+        
+        Returns list of services with accountServiceId and siteIdentifier.
+        """
+        user_data = await self.get_current_user()
+        
+        accounts = user_data.get("accounts", [])
+        services = []
+        
+        for account in accounts:
+            account_number = account.get("accountNumber")
+            account_address = account.get("accountAddress", "")
+            
+            for service in account.get("services", []):
+                services.append({
+                    "accountServiceId": service.get("accountServiceId"),
+                    "identifier": service.get("siteIdentifier"),
+                    "address": service.get("siteAddress", account_address),
+                    "serviceType": service.get("serviceType"),
+                    "accountNumber": account_number,
+                })
+        
+        _LOGGER.debug("Found %d services", len(services))
+        return services
 
     async def get_cost_detail(
         self,
