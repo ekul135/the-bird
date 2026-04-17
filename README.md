@@ -11,10 +11,15 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 
 ## Features
 
-- **Daily Usage (kWh)**: Total electricity consumption for the previous day
-- **Daily Usage Cost**: Cost of electricity usage (excluding supply charge)
-- **Daily Supply Charge**: The daily supply/service charge
-- **Daily Total Cost**: Total cost (usage + supply charge)
+- **Grid Usage (kWh)**: Daily grid electricity imported
+- **Grid Usage Cost**: Cost of grid usage
+- **Solar Export (kWh)**: Daily solar energy exported
+- **Solar Export Credit**: Credit from solar export
+- **Super Export (kWh)**: Super Export energy
+- **Super Export Credit**: Credit from Super Export
+- **Supply Charge**: Daily supply/service charge
+- **ZeroHero Credit**: ZeroHero credit
+- **Net Cost**: Net daily cost (negative = credit)
 
 ## Installation
 
