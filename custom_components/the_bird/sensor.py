@@ -199,6 +199,8 @@ class TheBirdSensor(CoordinatorEntity[TheBirdCoordinator], SensorEntity):
     @property
     def last_reset(self) -> datetime | None:
         """Return the time when the sensor was last reset."""
+        if self.entity_description.state_class != SensorStateClass.TOTAL:
+            return None
         if self.coordinator.data is None:
             return None
         date_str = self.coordinator.data.get("date")
