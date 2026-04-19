@@ -54,8 +54,9 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
             # Only update if data date has changed
-            if self.data is not None and data.get("date") == self.data.get("date"):
-                return self.data
+            if self.data is not None:
+                if data.get("date") == self.data.get("date"):
+                    return self.data
 
             # Fetch account balance
             account_number = self.entry.data.get(CONF_ACCOUNT_NUMBER)
