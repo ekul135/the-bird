@@ -62,7 +62,7 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if account_number:
                 try:
                     balance_data = await client.get_account_balance(account_number)
-                    data["account_balance"] = balance_data.get("balance")
+                    data["account_balance"] = -(balance_data.get("balance") or 0)
                 except Exception as err:
                     _LOGGER.warning("Failed to fetch account balance: %s", err)
                     data["account_balance"] = None
@@ -78,7 +78,7 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     balance = data.get("account_balance")
                     unbilled = data.get("unbilled_amount")
                     if balance is not None and unbilled is not None:
-                        data["estimated_balance"] = round(balance - unbilled, 2)
+                        data["estimated_balance"] = round(balance + unbilled, 2)
                     else:
                         data["estimated_balance"] = None
                 except Exception as err:
