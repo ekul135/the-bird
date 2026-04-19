@@ -273,10 +273,8 @@ class TheBirdClient:
 
         last_invoice_date = invoices[0].get("issuedDate", "")[:10]  # "2026-04-06"
 
-        # Fetch cost detail from day after last invoice to today
-        from_date = (
-            datetime.strptime(last_invoice_date, "%Y-%m-%d") + timedelta(days=1)
-        ).strftime("%Y-%m-%d")
+        # Fetch cost detail from the invoice issued date to today
+        from_date = last_invoice_date
         to_date = datetime.now().strftime("%Y-%m-%d")
 
         if from_date >= to_date:
