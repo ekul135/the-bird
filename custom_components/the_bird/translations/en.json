@@ -55,6 +55,15 @@
       },
       "net_cost": {
         "name": "Net Cost"
+      },
+      "account_balance": {
+        "name": "Account Balance"
+      },
+      "unbilled_amount": {
+        "name": "Unbilled Amount"
+      },
+      "estimated_balance": {
+        "name": "Estimated Balance"
       }
     }
   }

@@ -193,6 +193,118 @@ class TheBirdClient:
         _LOGGER.debug("Found %d services", len(services))
         return services
 
+    async def get_account_balance(self, account_number: str) -> dict[str, Any]:
+        """Fetch account balance.
+
+        Args:
+            account_number: The account number
+
+        Returns:
+            JSON response with balance data
+        """
+        session = await self._get_session()
+        url = f"{BASE_URL}/api/transaction/balance"
+        headers = {**self._headers, "referer": f"{BASE_URL}/dashboard"}
+        params = {"accountId": account_number}
+
+        async with session.get(url, headers=headers, params=params) as response:
+            if response.status != 200:
+                text = await response.text()
+                _LOGGER.error("Failed to get account balance: %s - %s", response.status, text)
+                raise TheBirdApiError(f"API error: {response.status}")
+            data = await response.json()
+            if not data.get("success"):
+                raise TheBirdApiError(f"API error: {data.get('message')}")
+            return data.get("data", {})
+
+    async def get_billing_history(
+        self, account_number: str, limit: int = 1
+    ) -> list[dict[str, Any]]:
+        """Fetch billing/invoice history.
+
+        Args:
+            account_number: The account number
+            limit: Number of invoices to return
+
+        Returns:
+            List of invoice records
+        """
+        session = await self._get_session()
+        url = f"{BASE_URL}/api/transaction/invoice"
+        headers = {**self._headers, "referer": f"{BASE_URL}/billingHistory"}
+        params = {"accountId": account_number}
+        payload = {
+            "startDate": None,
+            "endDate": None,
+            "offset": 0,
+            "limit": limit,
+        }
+
+        async with session.post(url, json=payload, headers=headers, params=params) as response:
+            if response.status != 200:
+                text = await response.text()
+                _LOGGER.error("Failed to get billing history: %s - %s", response.status, text)
+                raise TheBirdApiError(f"API error: {response.status}")
+            data = await response.json()
+            if not data.get("success"):
+                raise TheBirdApiError(f"API error: {data.get('message')}")
+            return data.get("data", {}).get("data", [])
+
+    async def get_unbilled_usage(
+        self,
+        account_service_id: int,
+        identifier: str,
+        account_number: str,
+    ) -> dict[str, Any]:
+        """Calculate unbilled usage since last invoice.
+
+        Args:
+            account_service_id: The account service ID
+            identifier: The meter identifier (NMI)
+            account_number: The account number
+
+        Returns:
+            Dict with unbilled_amount and billing_period_start
+        """
+        # Get most recent invoice to find billing period start
+        invoices = await self.get_billing_history(account_number, limit=1)
+        if not invoices:
+            raise TheBirdApiError("No invoices found")
+
+        last_invoice_date = invoices[0].get("issuedDate", "")[:10]  # "2026-04-06"
+
+        # Fetch cost detail from day after last invoice to today
+        from_date = (
+            datetime.strptime(last_invoice_date, "%Y-%m-%d") + timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+        to_date = datetime.now().strftime("%Y-%m-%d")
+
+        if from_date >= to_date:
+            return {
+                "unbilled_amount": 0.0,
+                "billing_period_start": from_date,
+            }
+
+        response = await self.get_cost_detail(
+            account_service_id=account_service_id,
+            identifier=identifier,
+            from_date=from_date,
+            to_date=to_date,
+        )
+
+        data = response.get("data", []) if isinstance(response, dict) else response
+        unbilled = 0.0
+
+        if data and isinstance(data, list):
+            for item in data:
+                amount = item.get("amount", 0.0) or 0.0
+                unbilled += amount
+
+        return {
+            "unbilled_amount": round(unbilled, 2),
+            "billing_period_start": from_date,
+        }
+
     async def get_cost_detail(
         self,
         account_service_id: int,

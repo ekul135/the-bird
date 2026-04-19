@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import TheBirdApiError, TheBirdAuthError, TheBirdClient, TheBirdNoDataError
 from .const import (
+    CONF_ACCOUNT_NUMBER,
     CONF_ACCOUNT_SERVICE_ID,
     CONF_IDENTIFIER,
     DEFAULT_SCAN_INTERVAL,
@@ -51,6 +52,39 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 identifier=self.entry.data[CONF_IDENTIFIER],
                 days_back=1,
             )
+
+            # Only update if data date has changed
+            if self.data is not None and data.get("date") == self.data.get("date"):
+                return self.data
+
+            # Fetch account balance
+            account_number = self.entry.data.get(CONF_ACCOUNT_NUMBER)
+            if account_number:
+                try:
+                    balance_data = await client.get_account_balance(account_number)
+                    data["account_balance"] = balance_data.get("balance")
+                except Exception as err:
+                    _LOGGER.warning("Failed to fetch account balance: %s", err)
+                    data["account_balance"] = None
+
+                # Fetch unbilled usage since last invoice
+                try:
+                    unbilled_data = await client.get_unbilled_usage(
+                        account_service_id=self.entry.data[CONF_ACCOUNT_SERVICE_ID],
+                        identifier=self.entry.data[CONF_IDENTIFIER],
+                        account_number=account_number,
+                    )
+                    data["unbilled_amount"] = unbilled_data.get("unbilled_amount")
+                    balance = data.get("account_balance")
+                    unbilled = data.get("unbilled_amount")
+                    if balance is not None and unbilled is not None:
+                        data["estimated_balance"] = round(balance - unbilled, 2)
+                    else:
+                        data["estimated_balance"] = None
+                except Exception as err:
+                    _LOGGER.warning("Failed to fetch unbilled usage: %s", err)
+                    data["unbilled_amount"] = None
+                    data["estimated_balance"] = None
 
             return data
 

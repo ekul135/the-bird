@@ -11,7 +11,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import TheBirdAuthError, TheBirdApiError, TheBirdClient
-from .const import CONF_ACCOUNT_SERVICE_ID, CONF_IDENTIFIER, DOMAIN
+from .const import CONF_ACCOUNT_NUMBER, CONF_ACCOUNT_SERVICE_ID, CONF_IDENTIFIER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,6 +89,7 @@ class TheBirdConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             parts = selected.split("|")
             account_service_id = int(parts[0])
             identifier = parts[1]
+            account_number = parts[2] if len(parts) > 2 else None
 
             # Check for existing entry
             await self.async_set_unique_id(f"{self._email}_{identifier}")
@@ -101,6 +102,7 @@ class TheBirdConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PASSWORD: self._password,
                     CONF_ACCOUNT_SERVICE_ID: account_service_id,
                     CONF_IDENTIFIER: identifier,
+                    CONF_ACCOUNT_NUMBER: account_number,
                 },
             )
 
@@ -110,8 +112,9 @@ class TheBirdConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             service_id = service.get("accountServiceId")
             identifier = service.get("identifier", "Unknown")
             address = service.get("address", "Unknown Address")
+            account_number = service.get("accountNumber", "")
             
-            key = f"{service_id}|{identifier}"
+            key = f"{service_id}|{identifier}|{account_number}"
             account_options[key] = f"{identifier} - {address}"
 
         return self.async_show_form(

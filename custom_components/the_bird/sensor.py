@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -116,6 +117,33 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="total_cost",
     ),
+    # Account Balance
+    TheBirdSensorEntityDescription(
+        key="account_balance",
+        translation_key="account_balance",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        suggested_display_precision=2,
+        value_key="account_balance",
+    ),
+    # Unbilled Amount
+    TheBirdSensorEntityDescription(
+        key="unbilled_amount",
+        translation_key="unbilled_amount",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        suggested_display_precision=2,
+        value_key="unbilled_amount",
+    ),
+    # Estimated Balance
+    TheBirdSensorEntityDescription(
+        key="estimated_balance",
+        translation_key="estimated_balance",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        suggested_display_precision=2,
+        value_key="estimated_balance",
+    ),
 )
 
 
@@ -169,12 +197,21 @@ class TheBirdSensor(CoordinatorEntity[TheBirdCoordinator], SensorEntity):
         return self.coordinator.data.get(self.entity_description.value_key)
 
     @property
+    def last_reset(self) -> datetime | None:
+        """Return the time when the sensor was last reset."""
+        if self.coordinator.data is None:
+            return None
+        date_str = self.coordinator.data.get("date")
+        if date_str:
+            return datetime.fromisoformat(date_str)
+        return None
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra state attributes."""
         if self.coordinator.data is None:
             return None
         
         return {
-            "date": self.coordinator.data.get("date"),
             "identifier": self._entry.data[CONF_IDENTIFIER],
         }
