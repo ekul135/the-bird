@@ -133,8 +133,10 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 continue
 
             # Create external statistic ID in the format domain:unique_id
-            # Must be lowercase for HA validation
-            statistic_id = f"{DOMAIN}:{sensor_info['key']}_{identifier}"
+            # Must be lowercase, only a-z, 0-9, and underscore
+            statistic_id = f"{DOMAIN}:{sensor_info['key']}"
+
+            _LOGGER.debug("Creating statistic with ID: %s, source: %s", statistic_id, DOMAIN)
 
             metadata = StatisticMetaData(
                 has_mean=False,
@@ -157,20 +159,19 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             try:
                 async_import_statistics(self.hass, metadata, statistics)
-                _LOGGER.debug(
+                _LOGGER.info(
                     "Imported statistic %s = %s for %s",
                     statistic_id,
                     value,
                     date_str,
                 )
             except Exception as err:
-                _LOGGER.error(
+                _LOGGER.exception(
                     "Failed to import statistic %s: %s", statistic_id, err
                 )
 
         # Mark this date as imported
         self._imported_dates.add(date_str)
-        _LOGGER.info("Successfully imported statistics for %s", date_str)
 
     async def _import_historical_data(self, client: TheBirdClient) -> None:
         """Import historical data on first run.
