@@ -106,14 +106,14 @@ DAILY_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
     ),
 )
 
-# Snapshot sensors - MEASUREMENT state class, point-in-time values that don't roll up
+# Snapshot sensors - no state_class (MONETARY doesn't support MEASUREMENT)
+# These are point-in-time values that don't roll up
 SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
     TheBirdSensorEntityDescription(
         key="account_balance",
         translation_key="account_balance",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_key="account_balance",
     ),
@@ -122,7 +122,6 @@ SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         translation_key="unbilled_amount",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_key="unbilled_amount",
     ),
@@ -131,7 +130,6 @@ SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         translation_key="estimated_balance",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_key="estimated_balance",
     ),

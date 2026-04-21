@@ -124,7 +124,7 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "Importing statistics for %s (timestamp: %s)", date_str, utc_dt.isoformat()
         )
 
-        identifier = self.entry.data[CONF_IDENTIFIER]
+        identifier = self.entry.data[CONF_IDENTIFIER].lower()
 
         # Import statistics for each sensor
         for data_key, sensor_info in self.STATISTIC_SENSORS.items():
@@ -133,12 +133,13 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 continue
 
             # Create external statistic ID in the format domain:unique_id
+            # Must be lowercase for HA validation
             statistic_id = f"{DOMAIN}:{sensor_info['key']}_{identifier}"
 
             metadata = StatisticMetaData(
                 has_mean=False,
                 has_sum=True,
-                name=f"The Bird {sensor_info['name']} ({identifier})",
+                name=f"The Bird {sensor_info['name']}",
                 source=DOMAIN,
                 statistic_id=statistic_id,
                 unit_of_measurement=sensor_info["unit"],
