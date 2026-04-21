@@ -20,6 +20,11 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 - **Supply Charge**: Daily supply/service charge
 - **ZeroHero Credit**: ZeroHero credit
 - **Net Cost**: Net daily cost (negative = credit)
+- **Account Balance**: Current account balance
+- **Unbilled Amount**: Unbilled usage since last invoice
+- **Estimated Balance**: Account balance + unbilled amount
+- **Historical Data**: Automatically imports 14 days of history on first setup
+- **Correct Date Attribution**: Statistics are correctly dated to match the actual usage date
 
 ## Installation
 
@@ -53,6 +58,10 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 
 After setup, the following sensors will be available:
 
+### Daily Data Sensors
+
+These sensors display the most recent daily data. Use the external statistics (see Energy Dashboard section) for charts and rollups.
+
 | Sensor | Description | Unit |
 |--------|-------------|------|
 | `sensor.the_bird_*_usage` | Grid electricity imported | kWh |
@@ -64,6 +73,16 @@ After setup, the following sensors will be available:
 | `sensor.the_bird_*_supply` | Daily supply charge | AUD |
 | `sensor.the_bird_*_zerohero` | ZeroHero credit | AUD |
 | `sensor.the_bird_*_net_cost` | Net daily cost (negative = credit) | AUD |
+
+### Account Snapshot Sensors
+
+These sensors show current account status and support historical tracking.
+
+| Sensor | Description | Unit |
+|--------|-------------|------|
+| `sensor.the_bird_*_account_balance` | Current account balance | AUD |
+| `sensor.the_bird_*_unbilled_amount` | Unbilled usage since last invoice | AUD |
+| `sensor.the_bird_*_estimated_balance` | Balance + unbilled amount | AUD |
 
 ## Example Dashboard Card
 
@@ -81,7 +100,33 @@ entities:
 
 ## Energy Dashboard
 
-You can add the grid usage and solar export sensors to the Home Assistant Energy Dashboard for tracking your electricity consumption and solar production over time.
+The Bird automatically imports statistics with the **correct historical date**. Since energy data from your provider represents yesterday's usage (but is fetched today), the integration imports statistics timestamped for the actual date the energy was used.
+
+### Historical Data Import
+
+On first setup, The Bird automatically fetches and imports **14 days of historical data**. This means your Energy Dashboard will have data immediately, not just from the day you installed the integration.
+
+### Setting up the Energy Dashboard
+
+1. Go to **Settings** → **Dashboards** → **Energy**
+2. Click **Add consumption** or **Add return to grid**
+3. Search for statistics starting with `the_bird:` (these are external statistics)
+4. Select the appropriate statistic:
+   - `the_bird:usage_<YOUR_NMI>` - Grid consumption (kWh)
+   - `the_bird:solar_<YOUR_NMI>` - Solar export (kWh)
+
+### Available Statistics
+
+| Statistic ID | Description |
+|--------------|-------------|
+| `the_bird:usage_<NMI>` | Grid electricity consumption (kWh) |
+| `the_bird:usage_cost_<NMI>` | Grid usage cost (AUD) |
+| `the_bird:solar_<NMI>` | Solar export (kWh) |
+| `the_bird:solar_credit_<NMI>` | Solar export credit (AUD) |
+| `the_bird:supply_<NMI>` | Daily supply charge (AUD) |
+| `the_bird:net_cost_<NMI>` | Net daily cost (AUD) |
+
+> **Note:** The sensors (e.g., `sensor.the_bird_*_usage`) show the current day's data and include a `data_date` attribute indicating which date the data is for. The external statistics (e.g., `the_bird:usage_*`) are correctly backdated for historical accuracy in the Energy Dashboard.
 
 ## Troubleshooting
 

@@ -437,3 +437,88 @@ class TheBirdClient:
             result["total_cost"] += amount
 
         return result
+
+    async def get_historical_data(
+        self, account_service_id: int, identifier: str, days: int = 14
+    ) -> list[dict[str, Any]]:
+        """Get historical usage data for multiple days.
+
+        Args:
+            account_service_id: The account service ID
+            identifier: The meter identifier (NMI)
+            days: Number of days of history to fetch (default 14)
+
+        Returns:
+            List of daily data dictionaries, one per day with data.
+        """
+        to_date = datetime.now().strftime("%Y-%m-%d")
+        from_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+        response = await self.get_cost_detail(
+            account_service_id=account_service_id,
+            identifier=identifier,
+            from_date=from_date,
+            to_date=to_date,
+        )
+
+        data = response.get("data", []) if isinstance(response, dict) else response
+
+        if not data or not isinstance(data, list):
+            return []
+
+        # Group items by date
+        daily_items: dict[str, list] = {}
+        for item in data:
+            date_str = item.get("date", "")  # Format: YYYY/MM/DD
+            if date_str:
+                if date_str not in daily_items:
+                    daily_items[date_str] = []
+                daily_items[date_str].append(item)
+
+        # Process each day
+        results = []
+        for date_api_format, items in daily_items.items():
+            # Convert YYYY/MM/DD to YYYY-MM-DD
+            date_iso = date_api_format.replace("/", "-")
+
+            daily_result = {
+                "date": date_iso,
+                "grid_usage_kwh": 0.0,
+                "grid_usage_cost": 0.0,
+                "solar_export_kwh": 0.0,
+                "solar_export_credit": 0.0,
+                "super_export_kwh": 0.0,
+                "super_export_credit": 0.0,
+                "supply_charge": 0.0,
+                "zerohero_credit": 0.0,
+                "total_cost": 0.0,
+            }
+
+            for item in items:
+                category = item.get("chargeCategory", "").upper()
+                amount = item.get("amount", 0.0) or 0.0
+                quantity = item.get("quantity", 0.0) or 0.0
+
+                if category == "USAGE":
+                    daily_result["grid_usage_kwh"] = quantity
+                    daily_result["grid_usage_cost"] = amount
+                elif category == "SOLAR":
+                    daily_result["solar_export_kwh"] = quantity
+                    daily_result["solar_export_credit"] = abs(amount)
+                elif "SUPER EXPORT" in category or "EXPORT TOP" in category.upper():
+                    daily_result["super_export_kwh"] = quantity
+                    daily_result["super_export_credit"] = abs(amount)
+                elif "ZEROHERO" in category:
+                    daily_result["zerohero_credit"] = abs(amount)
+                elif category == "SUPPLY":
+                    daily_result["supply_charge"] = amount
+
+                daily_result["total_cost"] += amount
+
+            results.append(daily_result)
+
+        # Sort by date
+        results.sort(key=lambda x: x["date"])
+        _LOGGER.debug("Retrieved %d days of historical data", len(results))
+
+        return results

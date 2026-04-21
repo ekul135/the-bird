@@ -13,3 +13,6 @@ BASE_URL = "https://myaccount.globirdenergy.com.au"
 
 # Update interval
 DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
+
+# Historical data - number of days to fetch on first run
+HISTORICAL_DAYS = 14
