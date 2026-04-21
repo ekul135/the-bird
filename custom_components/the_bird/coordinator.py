@@ -36,46 +36,46 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "unit": UnitOfEnergy.KILO_WATT_HOUR,
             "name": "Usage",
         },
-        "grid_usage_cost": {
-            "key": "usage_cost",
-            "unit": "AUD",
-            "name": "Usage Cost",
-        },
-        "solar_export_kwh": {
-            "key": "solar",
-            "unit": UnitOfEnergy.KILO_WATT_HOUR,
-            "name": "Solar Export",
-        },
-        "solar_export_credit": {
-            "key": "solar_credit",
-            "unit": "AUD",
-            "name": "Solar Credit",
-        },
-        "super_export_kwh": {
-            "key": "super_export",
-            "unit": UnitOfEnergy.KILO_WATT_HOUR,
-            "name": "Super Export",
-        },
-        "super_export_credit": {
-            "key": "super_export_credit",
-            "unit": "AUD",
-            "name": "Super Export Credit",
-        },
-        "supply_charge": {
-            "key": "supply",
-            "unit": "AUD",
-            "name": "Supply Charge",
-        },
-        "zerohero_credit": {
-            "key": "zerohero",
-            "unit": "AUD",
-            "name": "ZeroHero Credit",
-        },
-        "total_cost": {
-            "key": "net_cost",
-            "unit": "AUD",
-            "name": "Net Cost",
-        },
+        # "grid_usage_cost": {
+        #     "key": "usage_cost",
+        #     "unit": "AUD",
+        #     "name": "Usage Cost",
+        # },
+        # "solar_export_kwh": {
+        #     "key": "solar",
+        #     "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        #     "name": "Solar Export",
+        # },
+        # "solar_export_credit": {
+        #     "key": "solar_credit",
+        #     "unit": "AUD",
+        #     "name": "Solar Credit",
+        # },
+        # "super_export_kwh": {
+        #     "key": "super_export",
+        #     "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        #     "name": "Super Export",
+        # },
+        # "super_export_credit": {
+        #     "key": "super_export_credit",
+        #     "unit": "AUD",
+        #     "name": "Super Export Credit",
+        # },
+        # "supply_charge": {
+        #     "key": "supply",
+        #     "unit": "AUD",
+        #     "name": "Supply Charge",
+        # },
+        # "zerohero_credit": {
+        #     "key": "zerohero",
+        #     "unit": "AUD",
+        #     "name": "ZeroHero Credit",
+        # },
+        # "total_cost": {
+        #     "key": "net_cost",
+        #     "unit": "AUD",
+        #     "name": "Net Cost",
+        # },
     }
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
