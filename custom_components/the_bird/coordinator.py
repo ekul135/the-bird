@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import aiohttp
+from homeassistant.components.recorder.models import StatisticData, StatisticMeanType, StatisticMetaData
+from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -18,6 +20,7 @@ from .const import (
     CONF_IDENTIFIER,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    HISTORICAL_DAYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +28,55 @@ _LOGGER = logging.getLogger(__name__)
 
 class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator to manage data fetching from The Bird API."""
+
+    # Mapping of data keys to sensor types and their metadata
+    STATISTIC_SENSORS = {
+        "grid_usage_kwh": {
+            "key": "usage",
+            "unit": UnitOfEnergy.KILO_WATT_HOUR,
+            "name": "Usage",
+        },
+        "grid_usage_cost": {
+            "key": "usage_cost",
+            "unit": "AUD",
+            "name": "Usage Cost",
+        },
+        "solar_export_kwh": {
+            "key": "solar",
+            "unit": UnitOfEnergy.KILO_WATT_HOUR,
+            "name": "Solar Export",
+        },
+        "solar_export_credit": {
+            "key": "solar_credit",
+            "unit": "AUD",
+            "name": "Solar Credit",
+        },
+        "super_export_kwh": {
+            "key": "super_export",
+            "unit": UnitOfEnergy.KILO_WATT_HOUR,
+            "name": "Super Export",
+        },
+        "super_export_credit": {
+            "key": "super_export_credit",
+            "unit": "AUD",
+            "name": "Super Export Credit",
+        },
+        "supply_charge": {
+            "key": "supply",
+            "unit": "AUD",
+            "name": "Supply Charge",
+        },
+        "zerohero_credit": {
+            "key": "zerohero",
+            "unit": "AUD",
+            "name": "ZeroHero Credit",
+        },
+        "total_cost": {
+            "key": "net_cost",
+            "unit": "AUD",
+            "name": "Net Cost",
+        },
+    }
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
@@ -35,6 +87,136 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=DEFAULT_SCAN_INTERVAL,
         )
         self.entry = entry
+        self._imported_dates: set[str] = set()
+        self._historical_imported: bool = False
+
+    async def _import_statistics(self, data: dict[str, Any]) -> None:
+        """Import statistics with the correct historical date.
+
+        This ensures energy data is attributed to the date it was actually
+        recorded, not the date it was fetched.
+        """
+        date_str = data.get("date")
+        if not date_str:
+            _LOGGER.warning("No date in data, skipping statistics import")
+            return
+
+        # Check if we've already imported this date
+        if date_str in self._imported_dates:
+            _LOGGER.debug("Statistics for %s already imported", date_str)
+            return
+
+        # Parse the date and create a timestamp at start of day in UTC
+        # Statistics should use the start of the period they represent
+        try:
+            data_date = datetime.fromisoformat(date_str)
+            # Set to start of day in local timezone, then convert to UTC
+            local_start_of_day = data_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Get local timezone
+            local_tz = datetime.now().astimezone().tzinfo
+            local_dt = local_start_of_day.replace(tzinfo=local_tz)
+            utc_dt = local_dt.astimezone(timezone.utc)
+        except ValueError as err:
+            _LOGGER.error("Invalid date format %s: %s", date_str, err)
+            return
+
+        _LOGGER.info(
+            "Importing statistics for %s (timestamp: %s)", date_str, utc_dt.isoformat()
+        )
+
+        identifier = self.entry.data[CONF_IDENTIFIER].lower()
+
+        # Import statistics for each sensor
+        for data_key, sensor_info in self.STATISTIC_SENSORS.items():
+            value = data.get(data_key)
+            if value is None:
+                continue
+
+            # Create external statistic ID in the format domain:unique_id
+            # Must be lowercase, only a-z, 0-9, and underscore
+            statistic_id = f"{DOMAIN}:{sensor_info['key']}"
+
+            _LOGGER.debug("Creating statistic with ID: %s, source: %s", statistic_id, DOMAIN)
+
+            # Determine unit_class based on unit of measurement
+            unit = sensor_info["unit"]
+            if unit == UnitOfEnergy.KILO_WATT_HOUR:
+                unit_class = "energy"
+            else:
+                unit_class = None  # For monetary units
+
+            metadata = StatisticMetaData(
+                has_mean=False,
+                has_sum=True,
+                mean_type=StatisticMeanType.NONE,
+                name=f"The Bird {sensor_info['name']}",
+                source=DOMAIN,
+                statistic_id=statistic_id,
+                unit_class=unit_class,
+                unit_of_measurement=sensor_info["unit"],
+            )
+
+            # Create the statistic data point
+            # state = daily value, sum = cumulative (we use daily value, HA accumulates)
+            statistics = [
+                StatisticData(
+                    start=utc_dt,
+                    state=value,
+                    sum=value,
+                )
+            ]
+
+            try:
+                async_add_external_statistics(self.hass, metadata, statistics)
+                _LOGGER.info(
+                    "Imported statistic %s = %s for %s",
+                    statistic_id,
+                    value,
+                    date_str,
+                )
+            except Exception as err:
+                _LOGGER.exception(
+                    "Failed to import statistic %s: %s", statistic_id, err
+                )
+
+        # Mark this date as imported
+        self._imported_dates.add(date_str)
+
+    async def _import_historical_data(self, client: TheBirdClient) -> None:
+        """Import historical data on first run.
+
+        Fetches the past HISTORICAL_DAYS days of data and imports statistics
+        for each day, ensuring users have historical data immediately.
+        """
+        if self._historical_imported:
+            return
+
+        _LOGGER.info("Fetching %d days of historical data...", HISTORICAL_DAYS)
+
+        try:
+            historical_data = await client.get_historical_data(
+                account_service_id=self.entry.data[CONF_ACCOUNT_SERVICE_ID],
+                identifier=self.entry.data[CONF_IDENTIFIER],
+                days=HISTORICAL_DAYS,
+            )
+
+            if not historical_data:
+                _LOGGER.warning("No historical data available")
+                self._historical_imported = True
+                return
+
+            _LOGGER.info("Importing statistics for %d days", len(historical_data))
+
+            for daily_data in historical_data:
+                await self._import_statistics(daily_data)
+
+            self._historical_imported = True
+            _LOGGER.info("Historical data import complete")
+
+        except Exception as err:
+            _LOGGER.error("Failed to import historical data: %s", err)
+            # Still mark as imported to avoid retrying every update
+            self._historical_imported = True
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API."""
@@ -45,6 +227,10 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.entry.data[CONF_EMAIL],
                 self.entry.data[CONF_PASSWORD],
             )
+
+            # On first run, import historical data
+            if not self._historical_imported:
+                await self._import_historical_data(client)
 
             # Fetch daily data
             data = await client.get_daily_data(
@@ -57,6 +243,10 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if self.data is not None:
                 if data.get("date") == self.data.get("date"):
                     return self.data
+
+            # Import statistics with the correct historical date
+            # This ensures energy data is attributed to the date it occurred
+            await self._import_statistics(data)
 
             # Fetch account balance
             account_number = self.entry.data.get(CONF_ACCOUNT_NUMBER)

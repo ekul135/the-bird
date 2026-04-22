@@ -20,6 +20,11 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 - **Supply Charge**: Daily supply/service charge
 - **ZeroHero Credit**: ZeroHero credit
 - **Net Cost**: Net daily cost (negative = credit)
+- **Account Balance**: Current account balance
+- **Unbilled Amount**: Unbilled usage since last invoice
+- **Estimated Balance**: Account balance + unbilled amount
+- **Historical Data**: Automatically imports 14 days of history on first setup
+- **Correct Date Attribution**: Statistics are correctly dated to match the actual usage date
 
 ## Installation
 
@@ -51,37 +56,106 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 
 ## Sensors
 
-After setup, the following sensors will be available:
+After setup, the following sensors will be available (where `<NMI>` is your meter identifier):
+
+### Daily Data Sensors
+
+These sensors display the most recent daily data. Use the external statistics (see Energy Dashboard section) for charts and rollups.
 
 | Sensor | Description | Unit |
 |--------|-------------|------|
-| `sensor.the_bird_*_usage` | Grid electricity imported | kWh |
-| `sensor.the_bird_*_usage_cost` | Cost of grid usage | AUD |
-| `sensor.the_bird_*_solar` | Solar energy exported | kWh |
-| `sensor.the_bird_*_solar_credit` | Credit from solar export | AUD |
-| `sensor.the_bird_*_super_export` | Super Export energy | kWh |
-| `sensor.the_bird_*_super_export_credit` | Super Export credit | AUD |
-| `sensor.the_bird_*_supply` | Daily supply charge | AUD |
-| `sensor.the_bird_*_zerohero` | ZeroHero credit | AUD |
-| `sensor.the_bird_*_net_cost` | Net daily cost (negative = credit) | AUD |
+| `sensor.the_bird_<NMI>_usage` | Grid electricity imported | kWh |
+| `sensor.the_bird_<NMI>_usage_cost` | Cost of grid usage | AUD |
+| `sensor.the_bird_<NMI>_solar` | Solar energy exported | kWh |
+| `sensor.the_bird_<NMI>_solar_credit` | Credit from solar export | AUD |
+| `sensor.the_bird_<NMI>_super_export` | Super Export energy | kWh |
+| `sensor.the_bird_<NMI>_super_export_credit` | Super Export credit | AUD |
+| `sensor.the_bird_<NMI>_supply` | Daily supply charge | AUD |
+| `sensor.the_bird_<NMI>_zerohero` | ZeroHero credit | AUD |
+| `sensor.the_bird_<NMI>_net_cost` | Net daily cost (negative = credit) | AUD |
 
-## Example Dashboard Card
+### Account Snapshot Sensors
 
+These sensors show current account status.
+
+| Sensor | Description | Unit |
+|--------|-------------|------|
+| `sensor.the_bird_<NMI>_account_balance` | Current account balance | AUD |
+| `sensor.the_bird_<NMI>_unbilled_amount` | Unbilled usage since last invoice | AUD |
+| `sensor.the_bird_<NMI>_estimated_balance` | Balance + unbilled amount | AUD |
+
+## Example Dashboard Cards
+
+### Entities Card
 ```yaml
 type: entities
 title: The Bird Energy
 entities:
   - entity: sensor.the_bird_qb121208805_usage
     name: Usage
+  - entity: sensor.the_bird_qb121208805_usage_cost
+    name: Usage Cost
   - entity: sensor.the_bird_qb121208805_solar
-    name: Solar
+    name: Solar Export
+  - entity: sensor.the_bird_qb121208805_solar_credit
+    name: Solar Credit
   - entity: sensor.the_bird_qb121208805_net_cost
     name: Net Cost
 ```
 
+### Statistics Graph
+```yaml
+type: statistics-graph
+title: Daily Usage
+chart_type: line
+period: day
+stat_types:
+  - state
+entities:
+  - the_bird:usage
+  - the_bird:solar
+```
+
 ## Energy Dashboard
 
-You can add the grid usage and solar export sensors to the Home Assistant Energy Dashboard for tracking your electricity consumption and solar production over time.
+The Bird automatically imports statistics with the **correct historical date**. Since energy data from your provider represents yesterday's usage (but is fetched today), the integration imports statistics timestamped for the actual date the energy was used.
+
+### Historical Data Import
+
+On first setup, The Bird automatically fetches and imports **14 days of historical data**. This means your Energy Dashboard and statistics graphs will have data immediately, not just from the day you installed the integration.
+
+### Using Statistics in Charts
+
+The Bird creates external statistics that can be used in statistics graphs:
+
+```yaml
+type: statistics-graph
+title: Usage
+chart_type: line
+period: day
+stat_types:
+  - state
+entities:
+  - the_bird:usage
+```
+
+### Available Statistics
+
+| Statistic ID | Description |
+|--------------|-------------|
+| `the_bird:usage` | Grid electricity consumption (kWh) |
+| `the_bird:usage_cost` | Grid usage cost (AUD) |
+| `the_bird:solar` | Solar export (kWh) |
+| `the_bird:solar_credit` | Solar export credit (AUD) |
+| `the_bird:super_export` | Super export (kWh) |
+| `the_bird:super_export_credit` | Super export credit (AUD) |
+| `the_bird:supply` | Daily supply charge (AUD) |
+| `the_bird:zerohero` | ZeroHero credit (AUD) |
+| `the_bird:net_cost` | Net daily cost (AUD) |
+
+> **Tip:** Use `state` stat type for daily values. The `sum` type shows cumulative totals.
+
+> **Note:** The sensors (e.g., `sensor.the_bird_*_usage`) show the current day's data and include a `data_date` attribute indicating which date the data is for. The external statistics (e.g., `the_bird:usage`) are correctly backdated for historical accuracy.
 
 ## Troubleshooting
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -29,14 +28,15 @@ class TheBirdSensorEntityDescription(SensorEntityDescription):
     value_key: str
 
 
-SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
-    # Usage
+# Daily data sensors - NO state_class because statistics are imported
+# separately with correct historical dates via async_import_statistics.
+# This avoids HA creating wrong-dated statistics when the sensor state changes.
+DAILY_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
     TheBirdSensorEntityDescription(
         key="usage",
         translation_key="usage",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="grid_usage_kwh",
     ),
@@ -45,17 +45,14 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         translation_key="usage_cost",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="grid_usage_cost",
     ),
-    # Solar
     TheBirdSensorEntityDescription(
         key="solar",
         translation_key="solar",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="solar_export_kwh",
     ),
@@ -64,17 +61,14 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         translation_key="solar_credit",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="solar_export_credit",
     ),
-    # Super Export
     TheBirdSensorEntityDescription(
         key="super_export",
         translation_key="super_export",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="super_export_kwh",
     ),
@@ -83,41 +77,38 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         translation_key="super_export_credit",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="super_export_credit",
     ),
-    # Supply
     TheBirdSensorEntityDescription(
         key="supply",
         translation_key="supply",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="supply_charge",
     ),
-    # ZeroHero
     TheBirdSensorEntityDescription(
         key="zerohero",
         translation_key="zerohero",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="zerohero_credit",
     ),
-    # Net Cost (positive = pay, negative = credit)
     TheBirdSensorEntityDescription(
         key="net_cost",
         translation_key="net_cost",
         native_unit_of_measurement="AUD",
         device_class=SensorDeviceClass.MONETARY,
-        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
         value_key="total_cost",
     ),
-    # Account Balance
+)
+
+# Snapshot sensors - no state_class (MONETARY doesn't support MEASUREMENT)
+# These are point-in-time values that don't roll up
+SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
     TheBirdSensorEntityDescription(
         key="account_balance",
         translation_key="account_balance",
@@ -126,7 +117,6 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="account_balance",
     ),
-    # Unbilled Amount
     TheBirdSensorEntityDescription(
         key="unbilled_amount",
         translation_key="unbilled_amount",
@@ -135,7 +125,6 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         suggested_display_precision=2,
         value_key="unbilled_amount",
     ),
-    # Estimated Balance
     TheBirdSensorEntityDescription(
         key="estimated_balance",
         translation_key="estimated_balance",
@@ -145,6 +134,9 @@ SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         value_key="estimated_balance",
     ),
 )
+
+# Combined for entity setup
+SENSORS = DAILY_SENSORS + SNAPSHOT_SENSORS
 
 
 async def async_setup_entry(
@@ -197,18 +189,6 @@ class TheBirdSensor(CoordinatorEntity[TheBirdCoordinator], SensorEntity):
         return self.coordinator.data.get(self.entity_description.value_key)
 
     @property
-    def last_reset(self) -> datetime | None:
-        """Return the time when the sensor was last reset."""
-        if self.entity_description.state_class != SensorStateClass.TOTAL:
-            return None
-        if self.coordinator.data is None:
-            return None
-        date_str = self.coordinator.data.get("date")
-        if date_str:
-            return datetime.fromisoformat(date_str)
-        return None
-
-    @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra state attributes."""
         if self.coordinator.data is None:
@@ -216,4 +196,5 @@ class TheBirdSensor(CoordinatorEntity[TheBirdCoordinator], SensorEntity):
         
         return {
             "identifier": self._entry.data[CONF_IDENTIFIER],
+            "data_date": self.coordinator.data.get("date"),
         }
