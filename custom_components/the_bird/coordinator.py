@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import aiohttp
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+from homeassistant.components.recorder.models import StatisticData, StatisticMeanType, StatisticMetaData
 from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfEnergy
@@ -138,12 +138,21 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             _LOGGER.debug("Creating statistic with ID: %s, source: %s", statistic_id, DOMAIN)
 
+            # Determine unit_class based on unit of measurement
+            unit = sensor_info["unit"]
+            if unit == UnitOfEnergy.KILO_WATT_HOUR:
+                unit_class = "energy"
+            else:
+                unit_class = None  # For monetary units
+
             metadata = StatisticMetaData(
                 has_mean=False,
                 has_sum=True,
+                mean_type=StatisticMeanType.NONE,
                 name=f"The Bird {sensor_info['name']}",
                 source=DOMAIN,
                 statistic_id=statistic_id,
+                unit_class=unit_class,
                 unit_of_measurement=sensor_info["unit"],
             )
 
