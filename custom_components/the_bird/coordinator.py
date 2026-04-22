@@ -7,7 +7,7 @@ from typing import Any
 
 import aiohttp
 from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
-from homeassistant.components.recorder.statistics import async_import_statistics
+from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfEnergy
 from homeassistant.core import HomeAssistant
@@ -158,7 +158,7 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ]
 
             try:
-                async_import_statistics(self.hass, metadata, statistics)
+                async_add_external_statistics(self.hass, metadata, statistics)
                 _LOGGER.info(
                     "Imported statistic %s = %s for %s",
                     statistic_id,
