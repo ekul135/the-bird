@@ -268,13 +268,13 @@ class TheBirdClient:
         """
         # Get most recent invoice to find billing period start
         invoices = await self.get_billing_history(account_number, limit=1)
-        if not invoices:
-            raise TheBirdApiError("No invoices found")
+        if invoices:
+            from_date = invoices[0].get("issuedDate", "")[:10]  # "2026-04-06"
+        else:
+            # New account with no invoices yet — calculate from 90 days ago
+            from_date = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
 
-        last_invoice_date = invoices[0].get("issuedDate", "")[:10]  # "2026-04-06"
-
-        # Fetch cost detail from the invoice issued date to today
-        from_date = last_invoice_date
+        # Fetch cost detail from the start date to today
         to_date = datetime.now().strftime("%Y-%m-%d")
 
         if from_date >= to_date:
