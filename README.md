@@ -20,8 +20,6 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 - **Supply Charge**: Daily supply/service charge
 - **ZeroHero Credit**: ZeroHero credit
 - **Net Cost**: Net daily cost (negative = credit)
-- **Total Referrals**: Total number of referrals
-- **Referrals Waiting**: Referral count currently waiting (quoted)
 - **Referrals Bonus Paid**: Referral count with paid bonus
 - **Referral Bonus Total**: Total referral bonus amount paid
 - **Account Balance**: Current account balance
@@ -84,8 +82,6 @@ These sensors show current account status.
 
 | Sensor | Description | Unit |
 |--------|-------------|------|
-| `sensor.the_bird_<NMI>_total_referrals` | Total number of referrals | - |
-| `sensor.the_bird_<NMI>_referrals_waiting` | Referrals in waiting (quoted) status | - |
 | `sensor.the_bird_<NMI>_referrals_bonus_paid` | Referrals with paid bonus | - |
 | `sensor.the_bird_<NMI>_referral_bonus_total` | Total referral bonus paid | AUD |
 | `sensor.the_bird_<NMI>_account_balance` | Current account balance | AUD |
