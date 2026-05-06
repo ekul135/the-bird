@@ -330,11 +330,7 @@ class TheBirdClient:
             if total_count is not None and counted_rows >= total_count:
                 break
 
-        total_referrals = total_count if total_count is not None else counted_rows
-
         return {
-            "total_referrals": total_referrals,
-            "referrals_waiting": status_counts.get("quoted", 0),
             "referrals_bonus_paid": status_counts.get("bonuspaid", 0),
             "referral_bonus_total": round(bonus_total, 2),
         }
