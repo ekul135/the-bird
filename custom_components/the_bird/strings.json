@@ -59,6 +59,15 @@
       "total_referrals": {
         "name": "Total Referrals"
       },
+      "referrals_waiting": {
+        "name": "Referrals Waiting"
+      },
+      "referrals_bonus_paid": {
+        "name": "Referrals Bonus Paid"
+      },
+      "referral_bonus_total": {
+        "name": "Referral Bonus Total"
+      },
       "account_balance": {
         "name": "Account Balance"
       },

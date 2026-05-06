@@ -250,49 +250,94 @@ class TheBirdClient:
                 raise TheBirdApiError(f"API error: {data.get('message')}")
             return data.get("data", {}).get("data", [])
 
-    async def get_total_referrals(self, account_number: str) -> int:
-        """Fetch total referral count for an account.
+    async def get_referral_summary(self, account_number: str) -> dict[str, float | int]:
+        """Fetch referral summary and status counts for an account.
 
         Args:
             account_number: The account number used as accountId
 
         Returns:
-            Total number of referrals
+            Dict containing total_referrals, referrals_waiting,
+            referrals_bonus_paid, and referral_bonus_total.
         """
         session = await self._get_session()
         url = f"{BASE_URL}/api/referral/getReferralHistory"
         headers = {**self._headers, "referer": f"{BASE_URL}/referralhistory"}
-        params = {
-            "accountId": account_number,
-            "offset": 0,
-            "limit": 1,
+
+        limit = 100
+        offset = 0
+        total_count: int | None = None
+        bonus_total = 0.0
+        counted_rows = 0
+        status_counts: dict[str, int] = {}
+
+        while True:
+            params = {
+                "accountId": account_number,
+                "offset": offset,
+                "limit": limit,
+            }
+
+            async with session.get(url, headers=headers, params=params) as response:
+                if response.status != 200:
+                    text = await response.text()
+                    _LOGGER.error("Failed to get referral history: %s - %s", response.status, text)
+                    raise TheBirdApiError(f"API error: {response.status}")
+
+                response_data = await response.json()
+
+            if not response_data.get("success"):
+                raise TheBirdApiError(f"API error: {response_data.get('message')}")
+
+            root_data = response_data.get("data", {})
+            if not isinstance(root_data, dict):
+                break
+
+            # API shape: data.referralHistory.totalCount + data.referralHistory.data
+            referral_history = root_data.get("referralHistory", {})
+            if not isinstance(referral_history, dict):
+                break
+
+            if total_count is None:
+                count_value = referral_history.get("totalCount")
+                if isinstance(count_value, int):
+                    total_count = count_value
+
+                bonus_value = root_data.get("totalBonus")
+                if isinstance(bonus_value, (int, float)):
+                    bonus_total = float(bonus_value)
+
+            rows = referral_history.get("data", [])
+            if not isinstance(rows, list) or not rows:
+                break
+
+            counted_rows += len(rows)
+
+            for item in rows:
+                if not isinstance(item, dict):
+                    continue
+
+                status = str(item.get("status", "")).strip().lower()
+                if not status:
+                    continue
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            if len(rows) < limit:
+                break
+
+            offset += limit
+
+            if total_count is not None and counted_rows >= total_count:
+                break
+
+        total_referrals = total_count if total_count is not None else counted_rows
+
+        return {
+            "total_referrals": total_referrals,
+            "referrals_waiting": status_counts.get("quoted", 0),
+            "referrals_bonus_paid": status_counts.get("bonuspaid", 0),
+            "referral_bonus_total": round(bonus_total, 2),
         }
-
-        async with session.get(url, headers=headers, params=params) as response:
-            if response.status != 200:
-                text = await response.text()
-                _LOGGER.error("Failed to get referral history: %s - %s", response.status, text)
-                raise TheBirdApiError(f"API error: {response.status}")
-
-            data = await response.json()
-            if not data.get("success"):
-                raise TheBirdApiError(f"API error: {data.get('message')}")
-
-            payload = data.get("data", {})
-            if not isinstance(payload, dict):
-                return 0
-
-            # Prefer server-provided totals when available.
-            for key in ("total", "totalCount", "count", "totalRecords"):
-                value = payload.get(key)
-                if isinstance(value, int):
-                    return value
-
-            records = payload.get("data")
-            if isinstance(records, list):
-                return len(records)
-
-            return 0
 
     async def get_unbilled_usage(
         self,

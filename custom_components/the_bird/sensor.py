@@ -117,6 +117,28 @@ SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
         value_key="total_referrals",
     ),
     TheBirdSensorEntityDescription(
+        key="referrals_waiting",
+        translation_key="referrals_waiting",
+        icon="mdi:account-hourglass",
+        suggested_display_precision=0,
+        value_key="referrals_waiting",
+    ),
+    TheBirdSensorEntityDescription(
+        key="referrals_bonus_paid",
+        translation_key="referrals_bonus_paid",
+        icon="mdi:account-cash",
+        suggested_display_precision=0,
+        value_key="referrals_bonus_paid",
+    ),
+    TheBirdSensorEntityDescription(
+        key="referral_bonus_total",
+        translation_key="referral_bonus_total",
+        native_unit_of_measurement="AUD",
+        device_class=SensorDeviceClass.MONETARY,
+        suggested_display_precision=2,
+        value_key="referral_bonus_total",
+    ),
+    TheBirdSensorEntityDescription(
         key="account_balance",
         translation_key="account_balance",
         native_unit_of_measurement="AUD",
