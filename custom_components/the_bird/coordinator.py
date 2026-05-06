@@ -258,6 +258,12 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     _LOGGER.warning("Failed to fetch account balance: %s", err)
                     data["account_balance"] = None
 
+                try:
+                    data["total_referrals"] = await client.get_total_referrals(account_number)
+                except Exception as err:
+                    _LOGGER.warning("Failed to fetch total referrals: %s", err)
+                    data["total_referrals"] = None
+
                 # Fetch unbilled usage since last invoice
                 try:
                     unbilled_data = await client.get_unbilled_usage(

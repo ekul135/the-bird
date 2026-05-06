@@ -110,6 +110,13 @@ DAILY_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
 # These are point-in-time values that don't roll up
 SNAPSHOT_SENSORS: tuple[TheBirdSensorEntityDescription, ...] = (
     TheBirdSensorEntityDescription(
+        key="total_referrals",
+        translation_key="total_referrals",
+        icon="mdi:account-multiple-plus",
+        suggested_display_precision=0,
+        value_key="total_referrals",
+    ),
+    TheBirdSensorEntityDescription(
         key="account_balance",
         translation_key="account_balance",
         native_unit_of_measurement="AUD",

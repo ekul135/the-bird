@@ -56,6 +56,9 @@
       "net_cost": {
         "name": "Net Cost"
       },
+      "total_referrals": {
+        "name": "Total Referrals"
+      },
       "account_balance": {
         "name": "Account Balance"
       },
