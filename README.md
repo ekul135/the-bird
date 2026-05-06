@@ -20,6 +20,7 @@ A Home Assistant custom integration that fetches your daily electricity usage an
 - **Supply Charge**: Daily supply/service charge
 - **ZeroHero Credit**: ZeroHero credit
 - **Net Cost**: Net daily cost (negative = credit)
+- **Total Referrals**: Total number of successful referrals
 - **Account Balance**: Current account balance
 - **Unbilled Amount**: Unbilled usage since last invoice
 - **Estimated Balance**: Account balance + unbilled amount
@@ -80,6 +81,7 @@ These sensors show current account status.
 
 | Sensor | Description | Unit |
 |--------|-------------|------|
+| `sensor.the_bird_<NMI>_total_referrals` | Total number of referrals | - |
 | `sensor.the_bird_<NMI>_account_balance` | Current account balance | AUD |
 | `sensor.the_bird_<NMI>_unbilled_amount` | Unbilled usage since last invoice | AUD |
 | `sensor.the_bird_<NMI>_estimated_balance` | Balance + unbilled amount | AUD |
