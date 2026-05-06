@@ -259,10 +259,17 @@ class TheBirdCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data["account_balance"] = None
 
                 try:
-                    data["total_referrals"] = await client.get_total_referrals(account_number)
+                    referral_data = await client.get_referral_summary(account_number)
+                    data["total_referrals"] = referral_data.get("total_referrals")
+                    data["referrals_waiting"] = referral_data.get("referrals_waiting")
+                    data["referrals_bonus_paid"] = referral_data.get("referrals_bonus_paid")
+                    data["referral_bonus_total"] = referral_data.get("referral_bonus_total")
                 except Exception as err:
-                    _LOGGER.warning("Failed to fetch total referrals: %s", err)
+                    _LOGGER.warning("Failed to fetch referral summary: %s", err)
                     data["total_referrals"] = None
+                    data["referrals_waiting"] = None
+                    data["referrals_bonus_paid"] = None
+                    data["referral_bonus_total"] = None
 
                 # Fetch unbilled usage since last invoice
                 try:
